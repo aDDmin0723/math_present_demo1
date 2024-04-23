@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Markdown Previewer</title>
+  <link rel="stylesheet" href="stylesheets/style.css">
+  <link rel="stylesheet" href="stylesheets/bar.css">
+  <style id="effect">
+    mjx-math:hover {
+      background-color: rgb(249, 249, 169);
+      font-size: 150%;
+      font-weight: bold;
+      color: red;
+    }
+
+    #myTable {
+      display: none;
+      position: absolute;
+      bottom: 15%;
+      left: 5%;
+      z-index: 1;
+    }
+
+    #lower_case {
+      display: none;
+      position: absolute;
+      bottom: 3%;
+      left: 5%;
+      z-index: 1;
+    }
+
+    #upper_case {
+      display: none;
+      position: absolute;
+      bottom: 3%;
+      left: 5%;
+      z-index: 1;
+    }
+
+    .overlay-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .switch-button {
+      padding: 15px 10px;
+      font-size: 15px;
+      background-color: #02431c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .greek-button {
+      padding: 10px 10px;
+      font-size: 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .greek-button:active {
+      background-color: #708d72;
+    }
+  </style>
+  <script src="javascripts/plotly-2.30.0.min.js" charset="utf-8"></script>
+  <script src="javascripts/jquery-3.7.1.min.js"></script>
+</head>
+
+<body>
+  <div id="header" class="header">
+    <div class="menu">
+      <div class="title" onclick="f()">File <span class="fa fa-bars"></span>
+        <div class="arrow"></div>
+      </div>
+      <div class="dropdown">
+        <!-- 文件上傳區域 -->
+        <input type="file" id="fileInput" accept=".md" style="display: none;" />
+        <p onclick="document.getElementById('fileInput').click()">Upload</p>
+        <p onclick="downloadTextFile()">Download</p>
+      </div>
+    </div>
+  </div>
+  <nav class="stretch-navbar">
+    <div class="toggle-icon">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </div>
+    <ul class="navbar-list">
+      Slide Name :
+      <textarea id="name" class="name" placeholder="Input Name ">Def</textarea>
+      <div id="fontsize-button">
+        <label for="fontSizeInput">Font Size:</label>
+        <input type="number" id="fontSizeInput" min="0" max="5" value="1" step="0.1">
+      </div>
+      <div id="switch-button">
+        <label class="switch">
+          Presentation Mode
+          <input type="checkbox" id="mode-switch">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div id="switch-button">
+        <label for="enable_effect">Enable Formula Effects</label>
+        <input type="checkbox" id="enable_effect" checked>
+      </div>
+      <li class="navbar-item">
+        <a href="javascript: void(0)" class="btn2" onclick="toggleTable()">Symbol</a>
+      </li>
+      <li class="navbar-item">
+        <a href="javascript: void(0)" class="btn2" onclick="generateBlock()">Bold</a>
+      </li>
+      <li class="navbar-item">
+        <a href="javascript: void(0)" class="btn2" onclick="generateItalic()">Italic</a>
+      </li>
+      <li class="navbar-item">
+        <a href="javascript: void(0)" class="btn2" onclick="redirectToPage()">Plotpage</a>
+      </li>
+      <input type="color" id="colorPicker" onchange="addColorToSelectedText()">
+      <li class="navbar-item">
+        <a href="javascript: void(0)" class="btn2" onclick="radicals()">radicals</a>
+      </li>
+      <li class="navbar-item">
+        <a href="javascript: void(0)" class="btn2" onclick="Cnr()">radicals</a>
+      </li>
+    </ul>
+  </nav>
+  <button class="button" id="Save">Save</button>
+  <button class="button" id="Load">Load</button>
+
+  <script>
+    const navbar = document.querySelector('.stretch-navbar');
+    const toggleIcon = document.querySelector('.toggle-icon');
+    toggleIcon.addEventListener('click', () => {
+      navbar.classList.toggle('expanded');
+    });
+  </script>
+
+  <script>
+    var colorButton = document.getElementById("colorButton");
+    var body = document.body;
+    var currentColor = "#FFF";
+    var alternateColor = "#202224";
+
+    colorButton.addEventListener("click", function () {
+      var currentBackgroundColor = getComputedStyle(body).backgroundColor;
+
+      if (currentBackgroundColor === currentColor || currentBackgroundColor === 'rgb(255, 255, 255)') {
+        body.style.backgroundColor = alternateColor;
+      } else {
+        body.style.backgroundColor = currentColor;
+      }
+    });
+  </script>
+
+  <div id="localstorageFile">
+    Slides in the Local Storage:
+  </div>
+  <script>
+    function redirectToPage() {
+      window.open("plot.html", "_blank");
+    }
+  </script>
+
+  <div class="container">
+    <button id="lastButton" class="btn">Prev</button>
+    <button id="animateButton" class="btn">Next</button>
+  </div>
+  <div class="container">
+    <textarea id="input" class="input textarea" placeholder="Enter Markdown "></textarea>
+    <div class="splitter" id="splitter"></div>
+    <div id="preview"></div>
+  </div>
+
+  <table id="myTable">
+    <tr>
+      <td><button class="switch-button" onclick="switchlower()">greek</button></td>
+      <td><button class="switch-button" onclick="switchupper()">Greek</button></td>
+    </tr>
+  </table>
+  <table id="lower_case">
+    <tr>
+      <td>
+        <button class="greek-button" onclick="alpha()">α</button>
+      </td>
+      <td><button class="greek-button" onclick="beta()">β</button></td>
+      <td><button class="greek-button" onclick="gamma()">γ</button></td>
+      <td><button class="greek-button" onclick="delta()">δ</button></td>
+      <td><button class="greek-button" onclick="epsilon()">ϵ</button></td>
+      <td><button class="greek-button" onclick="zeta()">ζ</button></td>
+      <td><button class="greek-button" onclick="eta()">η</button></td>
+      <td><button class="greek-button" onclick="theta()">θ</button></td>
+    </tr>
+    <tr>
+      <td><button class="greek-button" onclick="iota()">ι</button></td>
+      <td><button class="greek-button" onclick="kappa()">κ</button></td>
+      <td><button class="greek-button" onclick="lambda()">λ</button></td>
+      <td><button class="greek-button" onclick="mu()">μ</button></td>
+      <td><button class="greek-button" onclick="nu()">ν</button></td>
+      <td><button class="greek-button" onclick="xi()">ξ</button></td>
+      <td><button class="greek-button" onclick="o()">o</button></td>
+      <td><button class="greek-button" onclick="pi()">π</button></td>
+    </tr>
+    <tr>
+      <td><button class="greek-button" onclick="rho()">ρ</button></td>
+      <td><button class="greek-button" onclick="sigma()">σ</button></td>
+      <td><button class="greek-button" onclick="tau()">τ</button></td>
+      <td><button class="greek-button" onclick="upsilon()">υ</button></td>
+      <td><button class="greek-button" onclick="phi()">ϕ</button></td>
+      <td><button class="greek-button" onclick="chi()">χ</button></td>
+      <td><button class="greek-button" onclick="psi()">ψ</button></td>
+      <td><button class="greek-button" onclick="omega()">ω</button></td>
+    </tr>
+  </table>
+  <table id="upper_case">
+    <tr>
+      <td><button class="greek-button" onclick="Alpha()">A</button></td>
+      <td><button class="greek-button" onclick="Beta()">B</button></td>
+      <td><button class="greek-button" onclick="Gamma()">Γ</button></td>
+      <td><button class="greek-button" onclick="Delta()">Δ</button></td>
+      <td><button class="greek-button" onclick="Epsilon()">E</button></td>
+      <td><button class="greek-button" onclick="Zeta()">Z</button></td>
+      <td><button class="greek-button" onclick="Eta()">H</button></td>
+      <td><button class="greek-button" onclick="Theta()">Θ</button></td>
+    </tr>
+    <tr>
+      <td><button class="greek-button" onclick="Iota()">I</button></td>
+      <td><button class="greek-button" onclick="Kappa()">K</button></td>
+      <td><button class="greek-button" onclick="Lambda()">Λ</button></td>
+      <td><button class="greek-button" onclick="Mu()">M</button></td>
+      <td><button class="greek-button" onclick="Nu()">N</button></td>
+      <td><button class="greek-button" onclick="Xi()">Ξ</button></td>
+      <td><button class="greek-button" onclick="O()">O</button></td>
+      <td><button class="greek-button" onclick="Pi()">Π</button></td>
+    </tr>
+    <tr>
+      <td><button class="greek-button" onclick="Rho()">P</button></td>
+      <td><button class="greek-button" onclick="Sigma()">Σ</button></td>
+      <td><button class="greek-button" onclick="Tau()">T</button></td>
+      <td><button class="greek-button" onclick="Upsilon()">Υ</button></td>
+      <td><button class="greek-button" onclick="Phi()">Φ</button></td>
+      <td><button class="greek-button" onclick="Chi()">X</button></td>
+      <td><button class="greek-button" onclick="Psi()">Ψ</button></td>
+      <td><button class="greek-button" onclick="Omega()">Ω</button></td>
+    </tr>
+  </table>
+
+  <script>
+    function toggleTable() {
+      var table = document.getElementById("myTable");
+      var table2 = document.getElementById("lower_case");
+      var table3 = document.getElementById("upper_case");
+      if (table.style.display === "none") {
+        table.style.display = "block";
+        table2.style.display = "block";
+      } else {
+        table.style.display = "none";
+        table2.style.display = "none";
+        table3.style.display = "none";
+      }
+    }
+  </script>
+
+
+  <script>
+    function addColorToSelectedText() {
+      var textarea = document.getElementById("input");
+      var selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+      var colorPicker = document.getElementById("colorPicker");
+      var color = colorPicker.value;
+      var newText = '<font color="' + color + '">' + selectedText + '</font>';
+      var beforeText = textarea.value.substring(0, textarea.selectionStart);
+      var afterText = textarea.value.substring(textarea.selectionEnd, textarea.value.length);
+      textarea.value = beforeText + newText + afterText;
+    }
+  </script>
+
+  <script>
+    function switchupper() {
+      var table = document.getElementById("lower_case");
+      var table2 = document.getElementById("upper_case");
+      if (table2.style.display === "none") {
+        table.style.display = "none";
+        table2.style.display = "block";
+      }
+    }
+  </script>
+
+  <script>
+    function switchlower() {
+      var table = document.getElementById("lower_case");
+      var table2 = document.getElementById("upper_case");
+      if (table.style.display === "none") {
+        table.style.display = "block";
+        table2.style.display = "none";
+      }
+    }
+  </script>
+
+  <script>
+    const StorageList = document.getElementById('localstorageFile');
+    const list = document.createElement('ul');
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+
+      const item = document.createElement('li');
+      item.textContent = `${key}`;
+      list.appendChild(item);
+    }
+
+    StorageList.appendChild(list);
+  </script>
+
+  <script>
+    var checkbox = document.getElementById('enable_effect');
+    var style = document.getElementById("effect");
+    checkbox.addEventListener('change', function () {
+      if (checkbox.checked) {
+        style.disabled = false;
+      } else {
+        style.disabled = true;
+      }
+    });
+  </script>
+
+  <script>
+    function generateBlock() {
+      var textarea = document.getElementById("input");
+      var start = textarea.selectionStart;
+      var end = textarea.selectionEnd;
+      var text = textarea.value;
+      var blockText = "****";
+      var newText = text.substring(0, start) + blockText + text.substring(end);
+      textarea.value = newText;
+      textarea.focus();
+      textarea.setSelectionRange(start + 2, start + 2);
+    }
+  </script>
+
+  <script>
+    function generateItalic() {
+      var textarea = document.getElementById("input");
+      var start = textarea.selectionStart;
+      var end = textarea.selectionEnd;
+      var text = textarea.value;
+      var blockText = "**";
+      var newText = text.substring(0, start) + blockText + text.substring(end);
+      textarea.value = newText;
+      textarea.focus();
+      textarea.setSelectionRange(start + 1, start + 1);
+    }
+  </script>
+
+  </div>
+  <script src="javascripts/markdown-it.min.js"></script>
+  <script src="javascripts/gsap.min.js"></script>
+  <script src="javascripts/symbol.js"></script>
+  <script src="javascripts/symbol2.js"></script>
+  <script src="javascripts/formula.js"></script>
+  <script src="javascripts/md-it-main.js"></script>
+  <script src="javascripts/GSAP.js"></script>
+  <script src="javascripts/sl.js"></script>
+  <script src="javascripts/tex-mml-chtml.js"></script>
+  <script src="javascripts/jquery.highlight-within-textarea.js"></script>
+</body>
+
+</html>
+
+<script>
+  const container = document.querySelector('#preview');
+  const canvas = document.querySelector('.overlay-canvas');
+  const ctx = canvas.getContext('2d');
+  let isDrawing = false;
+
+  canvas.width = container.offsetWidth;
+  canvas.height = container.offsetHeight;
+
+  /*function updateCanvasPosition() {
+    const containerRect = container.getBoundingClientRect();
+    canvas.style.top = containerRect.top + 'px';
+    canvas.style.left = containerRect.left + 'px';
+    canvas.style.width = containerRect.width + 'px';
+    canvas.style.height = containerRect.height + 'px';
+  }*/
+
+  //updateCanvasPosition();
+
+  //window.addEventListener('resize', updateCanvasPosition);
+
+  function startDrawing(e) {
+    isDrawing = true;
+    canvas.style.pointerEvents = 'auto';
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+
+  function stopDrawing() {
+    isDrawing = false;
+    canvas.style.pointerEvents = 'none';
+  }
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  const drawCheckbox = document.getElementById('drawCheckbox');
+  drawCheckbox.addEventListener('change', function () {
+    if (this.checked) {
+      container.addEventListener('mousedown', startDrawing);
+      container.addEventListener('mousemove', draw);
+      container.addEventListener('mouseup', stopDrawing);
+      container.addEventListener('mouseleave', stopDrawing);
+    } else {
+      container.removeEventListener('mousedown', startDrawing);
+      container.removeEventListener('mousemove', draw);
+      container.removeEventListener('mouseup', stopDrawing);
+      container.removeEventListener('mouseleave', stopDrawing);
+      stopDrawing();
+    }
+  });
+
+  const clearButton = document.getElementById('clearButton');
+  clearButton.addEventListener('click', clearCanvas);
+</script>
+
+
+<script>
+  const splitter = document.getElementById("splitter");
+  const leftColumn = document.getElementById("editor");
+  const rightColumn = document.getElementById("preview");
+  const container2 = document.querySelector(".container");
+
+  let isResizing = false;
+  let initialX = 0;
+  let initialLeftWidth = 0;
+
+  splitter.addEventListener("mousedown", (e) => {
+    isResizing = true;
+    initialX = e.clientX;
+    initialLeftWidth = leftColumn.offsetWidth;
+
+    document.addEventListener("mousemove", resize);
+    document.addEventListener("mouseup", stopResize);
+
+    e.preventDefault();
+  });
+
+  function resize(e) {
+    if (!isResizing) return;
+
+    const containerRect = container2.getBoundingClientRect();
+    const offsetX = e.clientX - initialX;
+    const newLeftWidth = initialLeftWidth + offsetX;
+    const newRightWidth = containerRect.width - newLeftWidth;
+
+    leftColumn.style.width = newLeftWidth + "px";
+    rightColumn.style.width = newRightWidth + "px";
+  }
+
+  function stopResize() {
+    isResizing = false;
+
+    document.removeEventListener("mousemove", resize);
+    document.removeEventListener("mouseup", stopResize);
+  }
+</script>
+
+
+<script>
+  function f() {
+    document.getElementsByClassName('dropdown')[0].classList.toggle('down');
+    document.getElementsByClassName('arrow')[0].classList.toggle('gone');
+    if (document.getElementsByClassName('dropdown')[0].classList.contains('down')) {
+      setTimeout(function () {
+        document.getElementsByClassName('dropdown')[0].style.overflow = 'visible';
+      }, 500);
+    } else {
+      document.getElementsByClassName('dropdown')[0].style.overflow = 'hidden';
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    var menu = document.getElementsByClassName('menu')[0];
+    if (!menu.contains(e.target)) {
+      var dropdown = document.getElementsByClassName('dropdown')[0];
+      dropdown.classList.remove('down');
+      var arrow = document.getElementsByClassName('arrow')[0];
+      arrow.classList.remove('gone');
+      dropdown.style.overflow = 'hidden';
+    }
+  });
+</script>
