@@ -164,9 +164,6 @@
     });
   </script>
 
-  <div id="localstorageFile">
-    Slides in the Local Storage:
-  </div>
   <script>
     function redirectToPage() {
       window.open("plot.html", "_blank");
@@ -306,20 +303,6 @@
         table2.style.display = "none";
       }
     }
-  </script>
-
-  <script>
-    const StorageList = document.getElementById('localstorageFile');
-    const list = document.createElement('ul');
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-
-      const item = document.createElement('li');
-      item.textContent = `${key}`;
-      list.appendChild(item);
-    }
-
-    StorageList.appendChild(list);
   </script>
 
   <script>
