@@ -65,6 +65,34 @@ md.renderer.rules.paragraph_open = function () {
 md.renderer.rules.paragraph_close = function () {
   return '';
 };
+
+
+md.renderer.rules.image = function (tokens, idx, options, env, self) {
+  var token = tokens[idx];
+
+  // Parse the alt text for size information
+  var altText = token.attrs[2][1];
+  var match = altText.match(/width:(\d+%)+ float:([a-z]+)/);
+  console.log(token)
+  console.log(altText)
+  console.log(match)
+
+  if (match) {
+    var size = match[1];
+    var float = match[2];
+
+    // Remove the size information from the alt text
+    token.attrs[2][1] = altText.replace(/width:(\d+%)+ float:([a-z]+)/, '');
+
+    // Add the size information to the src attribute
+    token.attrs[token.attrJoin('style','width:' + size + ' ;float:'+float+' ;')];
+  }
+
+  // Call the default renderer
+  return defaultRender(tokens, idx, options, env, self);
+};
+
+
 //==================
     
     var output = md.render(markdown);
